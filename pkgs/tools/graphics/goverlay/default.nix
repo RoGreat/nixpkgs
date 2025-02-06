@@ -90,6 +90,13 @@ stdenv.mkDerivation rec {
       ]
     }"
 
+    "--prefix LD_LIBRARY_PATH : ${
+      lib.makeLibraryPath [
+        libGL
+        libGLU
+      ]
+    }"
+
     # Force xcb since libqt5pas doesn't support Wayland
     # See https://github.com/benjamimgois/goverlay/issues/107
     "--set QT_QPA_PLATFORM xcb"
