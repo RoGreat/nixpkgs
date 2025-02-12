@@ -1,27 +1,19 @@
 {
-  lib,
-  stdenv,
-  fetchFromGitHub,
+  autoPatchelfHook,
   bash,
-  coreutils,
+  fetchFromGitHub,
   fpc,
-  git,
-  gnugrep,
   iproute2,
   lazarus-qt6,
+  lib,
   libGL,
   libGLU,
-  libnotify,
-  libqtpas,
   libX11,
+  libqtpas,
+  lsb-release,
   nix-update-script,
-  polkit,
-  procps,
   qt6,
-  systemd,
-  util-linux,
-  vulkan-tools,
-  which,
+  stdenv,
   wrapQtAppsHook,
 }:
 
@@ -46,54 +38,40 @@ stdenv.mkDerivation rec {
       --replace-fail 'prefix = /usr/local' "prefix = $out"
 
     substituteInPlace overlayunit.pas \
-      --replace-fail '/usr/share/icons/hicolor/128x128/apps/goverlay.png' "$out/share/icons/hicolor/128x128/apps/goverlay.png" \
+      --replace-fail '/bin/bash' "${lib.getExe' bash "bash"}" \
       --replace-fail '/sbin/ip' "${lib.getExe' iproute2 "ip"}" \
-      --replace-fail '/bin/bash' "${lib.getExe' bash "bash"}"
+      --replace-fail '/usr/lib/os-release' '/etc/os-release' \
+      --replace-fail '/usr/share/icons/hicolor/128x128/apps/goverlay.png' "$out/share/icons/hicolor/128x128/apps/goverlay.png" \
+      --replace-fail 'io_stats' "" \
+      --replace-fail 'lsb_release' "${lib.getExe' lsb-release "lsb_release"} 2> /dev/null"
   '';
 
   nativeBuildInputs = [
-    fpc
+    autoPatchelfHook
     lazarus-qt6
     wrapQtAppsHook
   ];
 
   buildInputs = [
+    fpc
     libGL
     libGLU
-    libqtpas
     libX11
+    libqtpas
     qt6.qtbase
   ];
 
-  NIX_LDFLAGS = "-lGLU -rpath ${lib.makeLibraryPath buildInputs}";
+  runtimeDependencies = [
+    bash
+    iproute2
+    lsb-release
+  ];
 
   buildPhase = ''
     runHook preBuild
     HOME=$(mktemp -d) lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus -B goverlay.lpi
     runHook postBuild
   '';
-
-  qtWrapperArgs = [
-    "--prefix PATH : ${
-      lib.makeBinPath [
-        bash
-        coreutils
-        git
-        gnugrep
-        libnotify
-        polkit
-        procps
-        systemd
-        util-linux.bin
-        vulkan-tools
-        which
-      ]
-    }"
-
-    # Force xcb since libqt5pas doesn't support Wayland
-    # See https://github.com/benjamimgois/goverlay/issues/107
-    "--set QT_QPA_PLATFORM xcb"
-  ];
 
   passthru.updateScript = nix-update-script { };
 
