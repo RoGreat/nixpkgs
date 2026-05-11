@@ -8,22 +8,14 @@
 
 stdenv.mkDerivation {
   pname = "vendor-reset";
-  version = "unstable-2024-04-16-${kernel.version}";
+  version = "unstable-2026-01-09-${kernel.version}";
 
   src = fetchFromGitHub {
-    owner = "gnif";
+    owner = "matthias-z";
     repo = "vendor-reset";
-    rev = "084881c6e9e11bdadaf05798e669568848e698a3";
-    hash = "sha256-Klu2uysbF5tH7SqVl815DwR7W+Vx6PyVDDLwoMZiqBI=";
+    rev = "09918556dfcd37010a6153020320fcd3628c3418";
+    hash = "sha256-3dslHh8Et1742iT8wHH3ztDvdnnT8SEB6R5VXqMRdBU=";
   };
-
-  patches = [
-    # This is a temporary, vendored version of this upstream PR:
-    # https://github.com/gnif/vendor-reset/pull/86
-    # As soon as it is merged, we should be able to update this
-    # module and remove the patch.
-    ./fix-linux-6.12-build.patch
-  ];
 
   nativeBuildInputs = kernel.moduleBuildDependencies;
 
@@ -42,7 +34,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "Linux kernel vendor specific hardware reset module";
-    homepage = "https://github.com/gnif/vendor-reset";
+    homepage = "https://github.com/matthias-z/vendor-reset";
     license = lib.licenses.gpl2Only;
     maintainers = [ ];
     platforms = [ "x86_64-linux" ];
