@@ -18,6 +18,8 @@
   libuuid,
   nlohmann_json,
   pkgsStatic,
+  tomlplusplus,
+  tree-sitter,
 
   mesonlsp,
   nix-update-script,
@@ -29,13 +31,13 @@ let
 in
 stdenv'.mkDerivation (finalAttrs: {
   pname = "mesonlsp";
-  version = "4.3.7";
+  version = "5.0.3";
 
   src = fetchFromGitHub {
     owner = "JCWasmx86";
     repo = "mesonlsp";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-QhZv4PTcf1jzSOcp1+bPZWf5COugCIMq1zkhc0PJjUQ=";
+    hash = "sha256-zx6pKWbs3gSWpdJ3TNWw9L95tUgeurl8kceyMXSBkAw=";
   };
 
   patches = [ ./disable-tests-that-require-network-access.patch ];
@@ -54,6 +56,8 @@ stdenv'.mkDerivation (finalAttrs: {
     libarchive
     libpkgconf
     nlohmann_json
+    tomlplusplus
+    tree-sitter
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [
     libossp_uuid
@@ -61,7 +65,10 @@ stdenv'.mkDerivation (finalAttrs: {
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [ libuuid ];
 
-  mesonFlags = [ "-Dbenchmarks=false" ];
+  mesonFlags = [
+    "-Dbenchmarks=false"
+    "-Duse_own_tree_sitter=false"
+  ];
 
   mesonCheckFlags = [ "--print-errorlogs" ];
 
@@ -72,7 +79,7 @@ stdenv'.mkDerivation (finalAttrs: {
       ada = fetchFromGitHub {
         owner = "ada-url";
         repo = "ada";
-        rev = "v2.7.4";
+        tag = "v2.7.4";
         hash = "sha256-V5LwL03x7/a9Lvg1gPvgGipo7IICU7xyO2D3GqP6Lbw=";
       };
 
@@ -88,20 +95,6 @@ stdenv'.mkDerivation (finalAttrs: {
         repo = "sha-2";
         rev = "49265c656f9b370da660531db8cc6bf0a2e110a6";
         hash = "sha256-X9M/ZATYXUiE4oGorPBnsdaKnKaObarnMRh6QEfkBls=";
-      };
-
-      tomlplusplus = fetchFromGitHub {
-        owner = "marzer";
-        repo = "tomlplusplus";
-        rev = "v3.4.0";
-        hash = "sha256-h5tbO0Rv2tZezY58yUbyRVpsfRjY3i+5TPkkxr6La8M=";
-      };
-
-      tree-sitter = fetchFromGitHub {
-        owner = "tree-sitter";
-        repo = "tree-sitter";
-        rev = "v0.20.8";
-        hash = "sha256-278zU5CLNOwphGBUa4cGwjBqRJ87dhHMzFirZB09gYM=";
       };
 
       tree-sitter-ini = fetchFromGitHub {
@@ -129,11 +122,6 @@ stdenv'.mkDerivation (finalAttrs: {
 
         cp -R --no-preserve=mode,ownership ${sha256} sha256
         cp "packagefiles/sha256/meson.build" sha256
-
-        cp -R --no-preserve=mode,ownership ${tomlplusplus} tomlplusplus-3.4.0
-
-        cp -R --no-preserve=mode,ownership ${tree-sitter} tree-sitter-0.20.8
-        cp "packagefiles/tree-sitter-0.20.8/meson.build" tree-sitter-0.20.8
 
         cp -R --no-preserve=mode,ownership ${tree-sitter-ini} tree-sitter-ini
         cp "packagefiles/tree-sitter-ini/meson.build" tree-sitter-ini
@@ -164,7 +152,7 @@ stdenv'.mkDerivation (finalAttrs: {
     changelog = "https://github.com/JCWasmx86/mesonlsp/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.gpl3Plus;
     mainProgram = "mesonlsp";
-    maintainers = [ ];
+    maintainers = with lib.maintainers; [ RoGreat ];
     platforms = lib.platforms.unix;
     # ../src/liblog/log.cpp:41:7: error: call to 'format' is ambiguous
     broken = stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isx86_64;
