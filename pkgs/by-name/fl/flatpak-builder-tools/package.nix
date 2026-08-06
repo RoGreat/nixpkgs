@@ -5,6 +5,8 @@
   lib,
   unstableGitUpdater,
   enableDeno ? false,
+  enableSwift ? false,
+  enableUnfree ? enableSwift,
 }:
 let
   version = "0-unstable-2026-06-09";
@@ -31,6 +33,12 @@ buildEnv {
   ]
   ++ lib.optionals enableDeno [
     (callPackage ./flatpak-deno-generator.nix { inherit src version; })
+  ]
+  ++ lib.optionals enableSwift [
+    (callPackage ./flatpak-spm-generator.nix { inherit src version; })
+  ]
+  ++ lib.optionals enableUnfree [
+    (callPackage ./flatpak-opam-generator.nix { inherit src version; })
   ];
 
   pathsToLink = [ "/bin" ];
@@ -45,7 +53,7 @@ buildEnv {
   meta = {
     description = "Collection of community-contributed scripts to assist with building applications using Flatpak Builder";
     homepage = "https://github.com/flatpak/flatpak-builder-tools";
-    license = lib.licenses.mit;
+    license = with lib.licenses; [ mit ] ++ lib.optionals enableUnfree [ unfree ];
     maintainers = with lib.maintainers; [ RoGreat ];
   };
 }

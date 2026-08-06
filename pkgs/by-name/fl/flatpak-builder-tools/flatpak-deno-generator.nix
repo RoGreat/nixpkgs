@@ -17,13 +17,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   installPhase = ''
     runHook preInstall
-    mkdir -p $out/bin $out/lib/flatpak-deno-generator
-    makeWrapper ${lib.getExe deno} $out/bin/flatpak-deno-generator \
-      --add-flag -RN \
-      --add-flag -W=. \
-      --add-flag $out/lib/flatpak-deno-generator/src/main.ts
+    mkdir -p $out/lib/flatpak-deno-generator
     cp -a * $out/lib/flatpak-deno-generator
     runHook postInstall
+  '';
+
+  preFixup = ''
+    makeWrapper ${lib.getExe deno} $out/bin/flatpak-deno-generator \
+      --add-flags "-RN -W=. $out/lib/flatpak-deno-generator/src/main.ts"
   '';
 
   installCheckPhase = ''
