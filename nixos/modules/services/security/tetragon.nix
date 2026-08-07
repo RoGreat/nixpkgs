@@ -6,12 +6,44 @@
 }:
 let
   cfg = config.services.tetragon;
+  enabledTracingPolicies = lib.filterAttrs (n: p: p.enable) cfg.tracingPolicies;
+  buildPolicyPath = n: p: lib.defaultTo (pkgs.writeText n p.text) p.source;
 in
 {
   options = {
     services.tetragon = {
       enable = lib.mkEnableOption "Tetragon";
       package = lib.mkPackageOption pkgs "tetragon" { };
+
+      tracingPolicies = lib.mkOption {
+        default = { };
+        description = ''
+          Tracing policies.
+        '';
+
+        type = lib.types.attrsOf (
+          lib.types.submodule {
+            options = {
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "";
+              };
+
+              text = lib.mkOption {
+                type = lib.types.lines;
+                description = "";
+              };
+
+              source = lib.mkOption {
+                type = lib.types.nullOr lib.types.path;
+                description = "";
+                default = null;
+              };
+            };
+          }
+        );
+      };
     };
   };
 
@@ -41,6 +73,13 @@ in
         };
       };
     };
+
+    environment.etc."tetragon/tetragon.tp.d".source = pkgs.linkFarm "tetragon.tp.d" (
+      lib.mapAttrsToList (name: p: {
+        inherit name;
+        path = buildPolicyPath name p;
+      }) enabledTracingPolicies
+    );
 
     environment.systemPackages = [ cfg.package ];
   };
