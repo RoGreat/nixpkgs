@@ -17,6 +17,11 @@ in
 
       configs = lib.mkOption {
         description = "Override default settings.";
+        example = lib.literalExpression ''
+          "enable-process-cred" = {
+            text = "true";
+          };
+        '';
         type = lib.types.attrsOf (
           lib.types.submodule {
             options = {
@@ -48,6 +53,14 @@ in
 
       tracingPolicies = lib.mkOption {
         description = "Tracing policies.";
+        example = lib.literalExpression ''
+          "file_monitoring.yaml" = {
+            source = pkgs.fetchurl {
+              url = "https://raw.githubusercontent.com/cilium/tetragon/refs/heads/main/examples/quickstart/file_monitoring.yaml";
+              hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+            };
+          };
+        '';
         type = lib.types.attrsOf (
           lib.types.submodule {
             options = {
