@@ -6,8 +6,9 @@
 }:
 let
   cfg = config.services.tetragon;
-  enabledTracingPolicies = lib.filterAttrs (n: p: p.enable) cfg.tracingPolicies;
-  buildPolicyPath = n: p: lib.defaultTo (pkgs.writeText n p.text) p.source;
+  enabledTracingPolicies = lib.filterAttrs (name: file: file.enable) cfg.tracingPolicies;
+  enabledConfigs = lib.filterAttrs (name: file: file.enable) cfg.configs;
+  buildPath = name: file: lib.defaultTo (pkgs.writeText name file.text) file.source;
 in
 {
   options = {
@@ -19,6 +20,36 @@ in
         default = { };
         description = ''
           Tracing policies.
+        '';
+
+        type = lib.types.attrsOf (
+          lib.types.submodule {
+            options = {
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "";
+              };
+
+              text = lib.mkOption {
+                type = lib.types.lines;
+                description = "";
+              };
+
+              source = lib.mkOption {
+                type = lib.types.nullOr lib.types.path;
+                description = "";
+                default = null;
+              };
+            };
+          }
+        );
+      };
+
+      configs = lib.mkOption {
+        default = { };
+        description = ''
+          Override default configuration.
         '';
 
         type = lib.types.attrsOf (
@@ -75,10 +106,17 @@ in
     };
 
     environment.etc."tetragon/tetragon.tp.d".source = pkgs.linkFarm "tetragon.tp.d" (
-      lib.mapAttrsToList (name: p: {
+      lib.mapAttrsToList (name: file: {
         inherit name;
-        path = buildPolicyPath name p;
+        path = buildPath name file;
       }) enabledTracingPolicies
+    );
+
+    environment.etc."tetragon/tetragon.conf.d".source = pkgs.linkFarm "tetragon.conf.d" (
+      lib.mapAttrsToList (name: file: {
+        inherit name;
+        path = buildPath name file;
+      }) enabledConfigs
     );
 
     environment.systemPackages = [ cfg.package ];
