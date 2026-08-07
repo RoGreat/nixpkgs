@@ -6,8 +6,7 @@
 }:
 let
   cfg = config.services.tetragon;
-  enabledConfigs = lib.filterAttrs (name: file: file.enable) cfg.configs;
-  enabledTracingPolicies = lib.filterAttrs (name: file: file.enable) cfg.tracingPolicies;
+  filterEnabled = option: lib.filterAttrs (name: file: file.enable) option;
   buildFilePath = name: file: lib.defaultTo (pkgs.writeText name file.text) file.source;
 in
 {
@@ -112,14 +111,14 @@ in
       lib.mapAttrsToList (name: file: {
         inherit name;
         path = buildFilePath name file;
-      }) enabledConfigs
+      }) (filterEnabled cfg.configs)
     );
 
     environment.etc."tetragon/tetragon.tp.d".source = pkgs.linkFarm "tetragon.tp.d" (
       lib.mapAttrsToList (name: file: {
         inherit name;
         path = buildFilePath name file;
-      }) enabledTracingPolicies
+      }) (filterEnabled cfg.tracingPolicies)
     );
 
     environment.systemPackages = [ cfg.package ];
