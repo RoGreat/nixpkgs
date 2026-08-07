@@ -6,9 +6,9 @@
 }:
 let
   cfg = config.services.tetragon;
-  enabledTracingPolicies = lib.filterAttrs (name: file: file.enable) cfg.tracingPolicies;
   enabledConfigs = lib.filterAttrs (name: file: file.enable) cfg.configs;
-  buildPath = name: file: lib.defaultTo (pkgs.writeText name file.text) file.source;
+  enabledTracingPolicies = lib.filterAttrs (name: file: file.enable) cfg.tracingPolicies;
+  buildFilePath = name: file: lib.defaultTo (pkgs.writeText name file.text) file.source;
 in
 {
   options = {
@@ -16,64 +16,66 @@ in
       enable = lib.mkEnableOption "Tetragon";
       package = lib.mkPackageOption pkgs "tetragon" { };
 
-      tracingPolicies = lib.mkOption {
-        default = { };
-        description = ''
-          Tracing policies.
-        '';
-
+      configs = lib.mkOption {
+        description = "Override default settings.";
         type = lib.types.attrsOf (
           lib.types.submodule {
             options = {
               enable = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "";
+                description = ''
+                  Whether this config file should be generated. This
+                  option allows specific config files to be disabled.
+                '';
               };
 
               text = lib.mkOption {
-                type = lib.types.lines;
-                description = "";
+                type = lib.types.nullOr lib.types.lines;
+                default = null;
+                description = "Text of the config file.";
               };
 
               source = lib.mkOption {
                 type = lib.types.nullOr lib.types.path;
-                description = "";
                 default = null;
+                description = "Path of the source config file.";
               };
             };
           }
         );
+        default = { };
       };
 
-      configs = lib.mkOption {
-        default = { };
-        description = ''
-          Override default configuration.
-        '';
-
+      tracingPolicies = lib.mkOption {
+        description = "Tracing policies.";
         type = lib.types.attrsOf (
           lib.types.submodule {
             options = {
               enable = lib.mkOption {
+                description = ''
+                  Whether this policy file should be generated. This
+                  option allows specific policy files to be disabled.
+                '';
                 type = lib.types.bool;
                 default = true;
-                description = "";
               };
 
               text = lib.mkOption {
-                type = lib.types.lines;
-                description = "";
+                description = "Text of the policy file.";
+                type = lib.types.nullOr lib.types.lines;
+                default = null;
               };
 
               source = lib.mkOption {
+                description = "Path of the source policy file.";
                 type = lib.types.nullOr lib.types.path;
-                description = "";
                 default = null;
               };
             };
           }
         );
+        default = { };
       };
     };
   };
@@ -82,14 +84,16 @@ in
     systemd.services = {
       tetragon = {
         description = "Tetragon eBPF-based Security Observability and Runtime Enforcement";
-        wantedBy = [ "multi-user.target" ];
+        unitConfig.DefaultDependencies = "no";
         after = [
           "network.target"
           "local-fs.target"
         ];
+        documentation = [ "https://tetragon.io/" ];
+
         startLimitBurst = 10;
         startLimitIntervalSec = 120;
-        documentation = [ "https://tetragon.io/" ];
+
         serviceConfig = {
           User = "root";
           Group = "root";
@@ -99,24 +103,23 @@ in
           Restart = "on-failure";
           RestartSec = 5;
         };
-        unitConfig = {
-          DefaultDependencies = "no";
-        };
+
+        wantedBy = [ "multi-user.target" ];
       };
     };
-
-    environment.etc."tetragon/tetragon.tp.d".source = pkgs.linkFarm "tetragon.tp.d" (
-      lib.mapAttrsToList (name: file: {
-        inherit name;
-        path = buildPath name file;
-      }) enabledTracingPolicies
-    );
 
     environment.etc."tetragon/tetragon.conf.d".source = pkgs.linkFarm "tetragon.conf.d" (
       lib.mapAttrsToList (name: file: {
         inherit name;
-        path = buildPath name file;
+        path = buildFilePath name file;
       }) enabledConfigs
+    );
+
+    environment.etc."tetragon/tetragon.tp.d".source = pkgs.linkFarm "tetragon.tp.d" (
+      lib.mapAttrsToList (name: file: {
+        inherit name;
+        path = buildFilePath name file;
+      }) enabledTracingPolicies
     );
 
     environment.systemPackages = [ cfg.package ];
