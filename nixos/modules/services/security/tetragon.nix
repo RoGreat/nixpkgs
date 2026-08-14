@@ -130,13 +130,69 @@ in
         startLimitIntervalSec = 120;
 
         serviceConfig = {
-          User = "root";
-          Group = "root";
           ExecStart = [
             "${lib.getExe cfg.package}"
           ];
           Restart = "on-failure";
           RestartSec = 5;
+
+          ProtectSystem = "full";
+          ProtectHome = true;
+          PrivateTmp = "disconnected";
+          PrivateDevices = true;
+          PrivateMounts = true;
+          ProtectKernelModules = true;
+          ProtectKernelLogs = true;
+          ProtectControlGroups = true;
+          LockPersonality = true;
+          RestrictRealtime = true;
+          ProtectClock = true;
+          MemoryDenyWriteExecute = true;
+          RestrictAddressFamilies = [
+            "AF_INET"
+            "AF_INET6"
+          ];
+          SocketBindDeny = [
+            "ipv4:udp"
+            "ipv6:udp"
+          ];
+          CapabilityBoundingSet = [
+            "~CAP_BLOCK_SUSPEND"
+            "CAP_CHOWN"
+            "CAP_IPC_LOCK"
+            "CAP_KILL"
+            "CAP_MKNOD"
+            "CAP_NET_RAW"
+            "CAP_SYS_BOOT"
+            "CAP_SYS_CHROOT"
+            "CAP_SYS_MODULE"
+            "CAP_SYS_NICE"
+            "CAP_SYS_PACCT"
+            "CAP_SYS_PTRACE"
+            "CAP_SYS_TIME"
+            "CAP_SYS_TTY_CONFIG"
+            "CAP_SYSLOG"
+            "CAP_WAKE_ALARM"
+          ];
+          SystemCallFilter = [
+            "~@aio:EPERM"
+            "@chown:EPERM"
+            "@clock:EPERM"
+            "@cpu-emulation:EPERM"
+            "@ipc:EPERM"
+            "@keyring:EPERM"
+            "@memlock:EPERM"
+            "@module:EPERM"
+            "@mount:EPERM"
+            "@obsolete:EPERM"
+            "@pkey:EPERM"
+            "@raw-io:EPERM"
+            "@reboot:EPERM"
+            "@resources:EPERM"
+            "@sandbox:EPERM"
+            "@setuid:EPERM"
+            "@swap:EPERM"
+          ];
         };
 
         wantedBy = [ "multi-user.target" ];
