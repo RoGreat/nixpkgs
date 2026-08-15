@@ -9697,13 +9697,6 @@ with pkgs;
 
   youtube-dl-light = with python3Packages; toPythonApplication youtube-dl-light;
 
-  yt-dlp-light = yt-dlp.override {
-    atomicparsleySupport = false;
-    ffmpegSupport = false;
-    javascriptSupport = false;
-    rtmpSupport = false;
-  };
-
   youtube-viewer = perlPackages.WWWYoutubeViewer;
 
   zathuraPkgs = recurseIntoAttrs (callPackage ../applications/misc/zathura { });
