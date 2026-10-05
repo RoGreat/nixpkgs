@@ -30,16 +30,37 @@
   writableTmpDirAsHomeHook,
   xdg-utils,
 }:
-
+let
+  runtimeDependencies = [
+    bash # sh
+    coreutils # cp, chmod, nohup, ln, mv, uname, sha256sum
+    curl
+    git
+    glib # gdbus
+    gnugrep # grep
+    gnused # sed
+    iproute2 # ip
+    kmod # lsmod
+    libnotify # notify-send (fallback)
+    mangohud
+    p7zip # 7z
+    pciutils # lspci
+    polkit # pkexec
+    procps # pgrep
+    psmisc # killall
+    which
+    xdg-utils # xdg-open
+  ];
+in
 stdenv.mkDerivation (finalAttrs: {
   pname = "goverlay";
-  version = "1.9.3";
+  version = "nightly-unstable-2026-10-03";
 
   src = fetchFromGitHub {
     owner = "benjamimgois";
     repo = "goverlay";
-    tag = finalAttrs.version;
-    hash = "sha256-+Tb/7HnGAsXAip07eat8sA4P2ry80kaw0g9b5RBa+lw=";
+    rev = "fa73e7ae677261b1903f207ca13b83ab372bb5e5";
+    hash = "sha256-LKNXbsbHZ/5yfwr9SHULIRBnW40KdG2RacC99IF9/YE=";
   };
 
   outputs = [
@@ -84,28 +105,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   preFixup = ''
     qtWrapperArgs+=(
-      --suffix PATH : ${
-        lib.makeBinPath [
-          bash # sh
-          coreutils # cp, chmod, nohup, ln, mv, uname, sha256sum
-          curl
-          git
-          glib # gdbus
-          gnugrep # grep
-          gnused # sed
-          iproute2 # ip
-          kmod # lsmod
-          libnotify # notify-send (fallback)
-          mangohud
-          p7zip # 7z
-          pciutils # lspci
-          polkit # pkexec
-          procps # pgrep
-          psmisc # killall
-          which
-          xdg-utils # xdg-open
-        ]
-      }
+      --suffix PATH : ${lib.makeBinPath runtimeDependencies}
     )
     patchelf $out/libexec/goverlay --set-rpath ${
       lib.makeLibraryPath [
@@ -128,12 +128,29 @@ stdenv.mkDerivation (finalAttrs: {
     }
   '';
 
+  doInstallCheck = true;
+
+  nativeInstallCheckInputs = runtimeDependencies;
+
+  installCheckPhase = ''
+    runHook preInstallCheck
+    # test-logic
+    lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus tests/logic/logic_tests.lpi --ws=qt6
+    patchelf ./tests/logic/logic_tests --set-rpath ${
+      lib.makeLibraryPath [
+        libx11
+        qt6Packages.libqtpas
+      ]
+    }
+    ./tests/logic/logic_tests
+    runHook postInstallCheck
+  '';
+
   passthru.updateScript = nix-update-script { };
 
   meta = {
     description = "Open source project that aims to create a Graphical UI to help manage Linux overlays";
     homepage = "https://github.com/benjamimgois/goverlay";
-    changelog = "https://github.com/benjamimgois/goverlay/releases/tag/${finalAttrs.src.tag}";
     license = lib.licenses.gpl3Plus;
     maintainers = with lib.maintainers; [ RoGreat ];
     mainProgram = "goverlay";
