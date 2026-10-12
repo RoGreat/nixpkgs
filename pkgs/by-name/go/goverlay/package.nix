@@ -54,13 +54,13 @@ let
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "goverlay";
-  version = "nightly-unstable-2026-10-10";
+  version = "nightly-unstable-2026-10-11";
 
   src = fetchFromGitHub {
     owner = "benjamimgois";
     repo = "goverlay";
-    rev = "1e7284a695bc3e6097b37f4d10edc52515f72d27";
-    hash = "sha256-HAQd/Fb0eejvyn/XthX4d6wb1ip2TvoHtmTo0eFwoY0=";
+    rev = "c420f5784d5457eb90f2763591759986b1d3b851";
+    hash = "sha256-u7CYB9/lilq6tQZkM+f/8MioT3lU9VHi06fSFsobGes=";
   };
 
   outputs = [
