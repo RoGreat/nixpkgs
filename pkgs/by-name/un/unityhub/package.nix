@@ -126,22 +126,21 @@ stdenv.mkDerivation (finalAttrs: {
     runHook preInstall
 
     mkdir -p $out
-    mv usr/lib/ $out/opt/
-    mv usr/share/ $out
+    mv usr/{lib,share}/ $out
 
-    # `/opt/unityhub/unityhub` is a shell wrapper that runs `/opt/unityhub/unityhub-bin`
+    # `/usr/lib/unityhub/unityhub` is a shell wrapper that runs `/usr/lib/unityhub/unityhub-bin`
     # which we don't need and overwrite with our own wrapper that uses the fhs env.
-    makeWrapper ${finalAttrs.fhsEnv}/bin/unityhub-fhs-env $out/opt/unityhub/unityhub \
-      --add-flags $out/opt/unityhub/unityhub-bin \
+    makeWrapper ${finalAttrs.fhsEnv}/bin/unityhub-fhs-env $out/lib/unityhub/unityhub \
+      --add-flags $out/lib/unityhub/unityhub-bin \
       --argv0 unityhub
 
     mkdir -p $out/bin
-    ln -s $out/opt/unityhub/unityhub $out/bin/unityhub
+    ln -s $out/lib/unityhub/unityhub $out/bin/unityhub
 
     # This file is used by auto updater to determine whether this install is
     # a .deb, .rpm, etc. Remove this to disable the auto updater, which auto
     # downloads the update, in addition to being useless.
-    rm $out/opt/unityhub/resources/package-type
+    rm $out/lib/unityhub/resources/package-type
 
     runHook postInstall
   '';
