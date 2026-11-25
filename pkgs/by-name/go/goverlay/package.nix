@@ -1,8 +1,11 @@
 {
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  SDL2,
   bash,
   coreutils,
   curl,
-  fetchFromGitHub,
   fpc,
   git,
   glib,
@@ -11,7 +14,6 @@
   iproute2,
   kmod,
   lazarus-qt6,
-  lib,
   libnotify,
   libx11,
   libz,
@@ -24,8 +26,6 @@
   procps,
   psmisc,
   qt6Packages,
-  SDL2,
-  stdenv,
   which,
   writableTmpDirAsHomeHook,
   xdg-utils,
@@ -33,13 +33,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "goverlay";
-  version = "1.9.4";
+  version = "2.0";
 
   src = fetchFromGitHub {
     owner = "benjamimgois";
     repo = "goverlay";
     tag = finalAttrs.version;
-    hash = "sha256-HAQd/Fb0eejvyn/XthX4d6wb1ip2TvoHtmTo0eFwoY0=";
+    hash = "sha256-q9vLuiMcyRAdfOkz1CTO6O0ZhhFgyNoY9lkT8QM2JSw=";
   };
 
   outputs = [
@@ -65,47 +65,47 @@ stdenv.mkDerivation (finalAttrs: {
     SDL2
   ];
 
-  installFlags = [ "prefix=$(out)" ];
-
   buildPhase = ''
     runHook preBuild
+
     # goverlay
     lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus -B goverlay.lpi --bm=Release --ws=qt6
     # pascube
     lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus -B pascube_src/pascube.lpi --ws=qt6
-    cp pascube_src/pascube ./pascube
+    cp --remove-destination pascube_src/pascube ./pascube
     # bgmod-splash
     lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus -B bgmod_splash_src/bgmod_splash.lpi --ws=qt6
     cp bgmod_splash_src/bgmod-splash ./bgmod-splash
     mkdir -p data/bgmod
     cp bgmod-splash data/bgmod/bgmod-splash
+
     runHook postBuild
   '';
 
+  runtimeInputs = [
+    bash # sh
+    coreutils # cp, chmod, nohup, ln, mv, uname, sha256sum
+    curl
+    git
+    glib # gdbus
+    gnugrep # grep
+    gnused # sed
+    iproute2 # ip
+    kmod # lsmod
+    libnotify # notify-send (fallback)
+    mangohud
+    p7zip # 7z
+    pciutils # lspci
+    polkit # pkexec
+    procps # pgrep
+    psmisc # killall
+    which
+    xdg-utils # xdg-open
+  ];
+
   preFixup = ''
     qtWrapperArgs+=(
-      --suffix PATH : ${
-        lib.makeBinPath [
-          bash # sh
-          coreutils # cp, chmod, nohup, ln, mv, uname, sha256sum
-          curl
-          git
-          glib # gdbus
-          gnugrep # grep
-          gnused # sed
-          iproute2 # ip
-          kmod # lsmod
-          libnotify # notify-send (fallback)
-          mangohud
-          p7zip # 7z
-          pciutils # lspci
-          polkit # pkexec
-          procps # pgrep
-          psmisc # killall
-          which
-          xdg-utils # xdg-open
-        ]
-      }
+      --suffix PATH : ${lib.escapeShellArg (lib.makeBinPath finalAttrs.runtimeInputs)}
     )
     patchelf $out/libexec/goverlay --set-rpath ${
       lib.makeLibraryPath [
@@ -128,7 +128,25 @@ stdenv.mkDerivation (finalAttrs: {
     }
   '';
 
+  installFlags = [ "prefix=$(out)" ];
+
   passthru.updateScript = nix-update-script { };
+
+  doInstallCheck = true;
+
+  installCheckInputs = finalAttrs.runtimeInputs;
+
+  installCheckPhase = ''
+    # test-logic
+    lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus tests/logic/logic_tests.lpi --ws=qt6
+    patchelf ./tests/logic/logic_tests --set-rpath ${
+      lib.makeLibraryPath [
+        libx11
+        qt6Packages.libqtpas
+      ]
+    }
+    ./tests/logic/logic_tests
+  '';
 
   meta = {
     description = "Open source project that aims to create a Graphical UI to help manage Linux overlays";
@@ -136,7 +154,7 @@ stdenv.mkDerivation (finalAttrs: {
     changelog = "https://github.com/benjamimgois/goverlay/releases/tag/${finalAttrs.src.tag}";
     license = lib.licenses.gpl3Plus;
     maintainers = with lib.maintainers; [ RoGreat ];
-    mainProgram = "goverlay";
     platforms = lib.platforms.linux;
+    mainProgram = "goverlay";
   };
 })
