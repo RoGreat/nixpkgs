@@ -18,7 +18,6 @@
   libx11,
   libz,
   mangohud,
-  nix-update-script,
   p7zip,
   patchelfUnstable,
   pciutils,
@@ -68,7 +67,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildPhase = ''
     runHook preBuild
-
     # goverlay
     lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus -B goverlay.lpi --bm=Release --ws=qt6
     # pascube
@@ -79,30 +77,26 @@ stdenv.mkDerivation (finalAttrs: {
     cp bgmod_splash_src/bgmod-splash ./bgmod-splash
     mkdir -p data/bgmod
     cp bgmod-splash data/bgmod/bgmod-splash
-
     runHook postBuild
   '';
 
-  runtimeInputs = [
-    bash # sh
-    coreutils # cp, chmod, nohup, ln, mv, uname, sha256sum
-    curl
-    git
-    glib # gdbus
-    gnugrep # grep
-    gnused # sed
-    iproute2 # ip
-    kmod # lsmod
-    libnotify # notify-send (fallback)
-    mangohud
-    p7zip # 7z
-    pciutils # lspci
-    polkit # pkexec
-    procps # pgrep
-    psmisc # killall
-    which
-    xdg-utils # xdg-open
-  ];
+  doInstallCheck = true;
+
+  nativeInstallCheckInputs = finalAttrs.runtimeInputs ++ [ python3 ];
+
+  installCheckPhase = ''
+    runHook preInstallCheck
+    # test-logic
+    lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus tests/logic/logic_tests.lpi --ws=qt6
+    patchelf ./tests/logic/logic_tests --set-rpath ${
+      lib.makeLibraryPath [
+        libx11
+        qt6Packages.libqtpas
+      ]
+    }
+    ./tests/logic/logic_tests
+    runHook postInstallCheck
+  '';
 
   preFixup = ''
     qtWrapperArgs+=(
@@ -131,23 +125,26 @@ stdenv.mkDerivation (finalAttrs: {
 
   installFlags = [ "prefix=$(out)" ];
 
-  passthru.updateScript = nix-update-script { };
-
-  doInstallCheck = true;
-
-  nativeInstallCheckInputs = finalAttrs.runtimeInputs ++ [ python3 ];
-
-  installCheckPhase = ''
-    # test-logic
-    lazbuild --lazarusdir=${lazarus-qt6}/share/lazarus tests/logic/logic_tests.lpi --ws=qt6
-    patchelf ./tests/logic/logic_tests --set-rpath ${
-      lib.makeLibraryPath [
-        libx11
-        qt6Packages.libqtpas
-      ]
-    }
-    ./tests/logic/logic_tests
-  '';
+  runtimeInputs = [
+    bash # sh
+    coreutils # cp, chmod, nohup, ln, mv, uname, sha256sum
+    curl
+    git
+    glib # gdbus
+    gnugrep # grep
+    gnused # sed
+    iproute2 # ip
+    kmod # lsmod
+    libnotify # notify-send (fallback)
+    mangohud
+    p7zip # 7z
+    pciutils # lspci
+    polkit # pkexec
+    procps # pgrep
+    psmisc # killall
+    which
+    xdg-utils # xdg-open
+  ];
 
   meta = {
     description = "Open source project that aims to create a Graphical UI to help manage Linux overlays";
