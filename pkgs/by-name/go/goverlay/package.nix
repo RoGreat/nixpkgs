@@ -25,6 +25,7 @@
   polkit,
   procps,
   psmisc,
+  python3,
   qt6Packages,
   which,
   writableTmpDirAsHomeHook,
@@ -134,7 +135,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   doInstallCheck = true;
 
-  installCheckInputs = finalAttrs.runtimeInputs;
+  nativeInstallCheckInputs = finalAttrs.runtimeInputs ++ [ python3 ];
 
   installCheckPhase = ''
     # test-logic
